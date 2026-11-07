@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="주루마블">
+<meta name="theme-color" content="#1b1430">
+<title>주루마블</title>
+<script>
+/* =====================================================================
+ *  ✏️ 여기만 고치면 됩니다!
+ *  BOARD : 보드 칸 목록. 0번이 출발점이고, 출발점에서 반시계 방향으로 돕니다.
+ *          칸 수는 4의 배수여야 합니다 (기본 28칸 = 모서리 4 + 변마다 6).
+ *          모서리는 0, 7, 14, 21번 칸입니다.
+ *    name : 보드에 보이는 짧은 이름 (5~6글자 이내 권장)
+ *    desc : 도착했을 때 크게 보여줄 미션 설명
+ *    type : "start"  출발점
+ *           "island" 무인도 (1턴 쉬기)
+ *           "key"    황금열쇠 (KEYS에서 랜덤 1장)
+ *           "space"  우주여행 (원하는 칸으로 이동)
+ *           "normal" 일반 미션
+ *    icon : (선택) 칸/모달에 표시할 이모지
+ * ===================================================================== */
+const BOARD = [
+  // ── 0: 출발 (오른쪽 아래 모서리) ──
+  { name: "출발", desc: "출발! 한 바퀴 돌 때마다 원하는 사람 1명 지목해서 한 잔 먹이기", type: "start", icon: "🏁" },
+  // ── 아래 변 (오른쪽 → 왼쪽) ──
+  { name: "원샷", desc: "내 잔 원샷!", type: "normal" },
+  { name: "러브샷", desc: "왼쪽 사람과 함께 러브샷 💕", type: "normal" },
+  { name: "황금열쇠", desc: "황금열쇠 카드를 뽑으세요", type: "key" },
+  { name: "지목", desc: "아무나 한 명 지목! 지목당한 사람 한 잔", type: "normal" },
+  { name: "존댓말 금지", desc: "다음 내 차례까지 전원 존댓말 금지! 존댓말 쓰면 한 잔", type: "normal" },
+  { name: "흑기사", desc: "벌주 한 잔! 흑기사를 부를 수 있음 (흑기사는 나에게 소원 1개)", type: "normal" },
+  // ── 7: 무인도 (왼쪽 아래 모서리) ──
+  { name: "무인도", desc: "무인도에 갇혔다! 1턴 쉬기 🏝️", type: "island", icon: "🏝️" },
+  // ── 왼쪽 변 (아래 → 위) ──
+  { name: "패스", desc: "아무것도 안 해도 됨. 휴~ 살았다 😮‍💨", type: "normal", icon: "😮‍💨" },
+  { name: "막내 원샷", desc: "이 자리에서 학번이 제일 낮은 사람 원샷!", type: "normal" },
+  { name: "손병호", desc: "손병호 게임 한 판! 손가락 다 접힌 사람 한 잔", type: "normal" },
+  { name: "황금열쇠", desc: "황금열쇠 카드를 뽑으세요", type: "key" },
+  { name: "건배사", desc: "멋진 건배사 한 마디 하고 다같이 한 잔! (재미없으면 혼자 한 잔 더)", type: "normal" },
+  { name: "양옆 한 잔", desc: "내 양 옆 사람 한 잔씩!", type: "normal" },
+  // ── 14: 다같이 건배 (왼쪽 위 모서리) ──
+  { name: "다같이 건배", desc: "전원 잔 들어! 다같이 건배~ 짠! 🍻", type: "normal", icon: "🍻" },
+  // ── 위 변 (왼쪽 → 오른쪽) ──
+  { name: "선배 지목", desc: "선배 한 명 지목해서 같이 한 잔", type: "normal" },
+  { name: "초성게임", desc: "초성 게임 한 판 (주제는 내가 정함)! 못 맞힌 사람 한 잔", type: "normal" },
+  { name: "황금열쇠", desc: "황금열쇠 카드를 뽑으세요", type: "key" },
+  { name: "반 잔", desc: "딱 반 잔만 마시기", type: "normal" },
+  { name: "베스킨31", desc: "베스킨라빈스 31 한 판! 31 외친 사람 한 잔", type: "normal" },
+  { name: "자기소개", desc: "학번·이름·MBTI로 자기소개하고 한 잔 (버벅이면 두 잔)", type: "normal" },
+  // ── 21: 우주여행 (오른쪽 위 모서리) ──
+  { name: "우주여행", desc: "원하는 칸으로 날아갑니다! 🚀", type: "space", icon: "🚀" },
+  // ── 오른쪽 변 (위 → 아래) ──
+  { name: "오른쪽 한 잔", desc: "오른쪽 사람 한 잔!", type: "normal" },
+  { name: "황금열쇠", desc: "황금열쇠 카드를 뽑으세요", type: "key" },
+  { name: "진실게임", desc: "다른 사람들이 낸 질문 1개에 진실로 답하기. 거부하면 원샷!", type: "normal" },
+  { name: "패스", desc: "통과! 다같이 하이파이브 한 바퀴 🙌", type: "normal", icon: "🙌" },
+  { name: "폭탄주", desc: "폭탄주를 직접 제조해서 지목한 사람에게 선물하기 💣", type: "normal" },
+  { name: "생일자", desc: "이번 달 생일인 사람 다같이 한 잔! (없으면 내가 한 잔)", type: "normal" },
+];
+
+/* 황금열쇠 카드 (원하는 만큼 추가/삭제 가능) */
+const KEYS = [
+  "👑 왕게임! 한 명에게 무엇이든 명령 하나 하기",
+  "🛡️ 벌주 면제권! 다음 벌주 1번 패스 (스스로 기억하기)",
+  "🙇 다음 내 차례까지 모두 나에게 존댓말! 어기면 한 잔",
+  "🪞 벌주 반사! 오른쪽 사람이 대신 한 잔",
+  "🙌 손 안 대고 한 잔 마시기",
+  "📸 신입생 시절 흑역사 하나 공개 or 원샷",
+  "🎖️ MT 반장 임명! 한 바퀴 동안 '반장님'이라고 안 부르면 한 잔",
+  "👫 짝꿍 지정! 한 명을 짝꿍으로, 다음 한 바퀴 동안 둘이 같이 마시기",
+  "0️⃣ 제로게임 한 판! 진 사람 한 잔",
+  "🍢 마니또! 아무나 한 명 지목해서 안주 먹여주기",
+];
+
+/* 출발점을 지나갈 때 뜨는 알림 문구 */
+const PASS_START_MSG = "🎉 출발점 통과! 원하는 사람 1명 지목해서 한 잔!";
+</script>
+<style>
+:root{
+  --bg:#1b1430; --panel:#2a2045; --panel2:#352a58; --text:#fff; --muted:#b9b0d6;
+  --accent:#ffcc33; --danger:#ff5c6c; --purple:#6c3cff;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
+  touch-action:manipulation;overscroll-behavior:none}
+body{overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-text-size-adjust:100%}
+input{-webkit-user-select:text;user-select:text}
+button{font:inherit;color:inherit;border:0;cursor:pointer;touch-action:manipulation}
+button:disabled{opacity:.4;cursor:default}
+button:active:not(:disabled){transform:scale(.96)}
+.screen{position:fixed;inset:0;display:none}
+.dot{display:inline-block;width:.8em;height:.8em;border-radius:50%;border:2px solid #fff;flex:none}
+
+/* ---------- 설정 화면 ---------- */
+#setup.active{display:block;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.wrap{max-width:600px;margin:0 auto;padding:24px 18px 40px}
+h1{font-size:clamp(36px,10vw,56px);margin:8px 0 2px;text-align:center;color:var(--accent);letter-spacing:-1px}
+.sub{text-align:center;color:var(--muted);margin:0 0 24px;font-size:17px}
+#addForm{display:flex;gap:10px}
+#nameInput{flex:1;min-width:0;height:60px;border-radius:14px;border:2px solid var(--panel2);background:var(--panel);
+  color:#fff;font-size:20px;padding:0 16px;outline:none}
+#nameInput:focus{border-color:var(--accent)}
+#addBtn{height:60px;padding:0 24px;border-radius:14px;background:var(--purple);font-size:20px;font-weight:800}
+#countInfo{color:var(--muted);margin:16px 4px 8px;font-size:16px}
+#setupList{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+#setupList li{display:flex;align-items:center;gap:10px;background:var(--panel);border-radius:14px;padding:8px 8px 8px 14px;min-height:64px}
+#setupList .num{font-weight:900;color:var(--muted);width:1.6em;text-align:right;font-size:18px}
+#setupList .dot{width:26px;height:26px}
+#setupList .nm{flex:1;min-width:0;font-size:21px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ibtn{width:48px;height:48px;border-radius:12px;background:var(--panel2);font-size:20px;flex:none}
+.ibtn.del{background:#4a2236;color:#ff9aa6}
+.empty{color:var(--muted);text-align:center;padding:24px;border:2px dashed var(--panel2);border-radius:14px}
+#shuffleBtn{width:100%;height:58px;margin-top:16px;border-radius:14px;background:var(--panel2);font-size:19px;font-weight:700}
+#startBtn{width:100%;height:72px;margin-top:14px;border-radius:18px;font-size:26px;font-weight:900;color:#3a2500;
+  background:linear-gradient(#ffdb5c,#ffab00);box-shadow:0 6px 0 #b67900}
+
+/* ---------- 게임 화면 ---------- */
+#game.active{display:grid;grid-template-columns:100%;grid-template-rows:auto minmax(0,1fr) auto;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+#topbar{display:flex;align-items:center;gap:10px;padding:8px 12px;min-width:0}
+#turnLabel{flex:1;min-width:0;display:flex;align-items:center;gap:.35em;font-size:clamp(24px,7vw,46px);font-weight:900;white-space:nowrap}
+#turnName{overflow:hidden;text-overflow:ellipsis}
+#turnLabel .suffix{color:var(--muted);font-weight:700;font-size:.75em}
+#resetBtn{flex:none;height:44px;padding:0 14px;border-radius:12px;background:var(--panel2);font-size:15px;font-weight:700;color:#ffb3bc}
+#boardWrap{min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;padding:2px 4px}
+#plist{display:flex;flex-wrap:wrap;gap:6px;padding:6px 10px 10px;max-height:24vh;overflow-y:auto;-webkit-overflow-scrolling:touch;align-content:flex-start}
+.pchip{display:flex;align-items:center;gap:6px;background:var(--panel);border-radius:12px;padding:6px 10px;font-size:15px;border:2px solid transparent;min-width:0}
+.pchip.cur{border-color:var(--accent);background:var(--panel2)}
+.pchip .num{color:var(--muted);font-weight:800}
+.pchip .pn{font-weight:800;max-width:7em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pchip .pp{color:var(--muted);white-space:nowrap}
+
+@media (orientation:landscape){
+  #game.active{grid-template-columns:minmax(0,1fr) clamp(210px,30vw,380px);grid-template-rows:auto minmax(0,1fr)}
+  #boardWrap{grid-column:1;grid-row:1 / 3;padding:6px}
+  #topbar{grid-column:2;grid-row:1;flex-direction:column;align-items:stretch;padding:12px 10px 4px}
+  #turnLabel{font-size:clamp(22px,3.4vw,44px);justify-content:center}
+  #resetBtn{align-self:flex-end;order:-1}
+  #plist{grid-column:2;grid-row:2;max-height:none;flex-direction:column;flex-wrap:nowrap;padding:6px 10px 12px}
+  .pchip{font-size:clamp(14px,1.6vw,18px);padding:8px 10px}
+  .pchip .pn{max-width:none;flex:1}
+}
+
+/* ---------- 보드 ---------- */
+#board{--b:320px;position:relative;display:grid;gap:2px;padding:3px;background:#0e0a1c;border-radius:12px;
+  box-shadow:0 0 0 2px #3d3166,0 10px 30px rgba(0,0,0,.5)}
+.cell{position:relative;background:#fff7ea;color:#2b1d0e;border-radius:5px;overflow:hidden;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;font-size:calc(var(--b) * .027);font-weight:800;line-height:1.12;
+  padding:2px;word-break:keep-all;overflow-wrap:anywhere}
+.cell .band{position:absolute;left:0;right:0;top:0;height:17%}
+.cell .ci{font-size:calc(var(--b) * .042);line-height:1}
+.cell .cn{position:relative;margin-top:8%}
+.cell.corner{font-size:calc(var(--b) * .03)}
+.cell.corner .ci{font-size:calc(var(--b) * .06)}
+.cell.corner .cn{margin-top:2%}
+.cell.t-start{background:#ffe08a}
+.cell.t-island{background:#a8ecd9}
+.cell.t-space{background:#c9c2ff}
+.cell.t-key{background:linear-gradient(145deg,#ffe27a,#f5b400);color:#5a3a00}
+.cell.t-key .cn{margin-top:0;white-space:nowrap;font-size:calc(var(--b) * .023)}
+.cell.toast{background:#ffc2d1}
+.cell .tokens{position:absolute;left:1px;right:1px;bottom:2px;display:flex;flex-wrap:wrap;justify-content:center;gap:1px;z-index:2;pointer-events:none}
+.token{width:calc(var(--b) * .045);height:calc(var(--b) * .045);border-radius:50%;border:2.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.6)}
+.token.me{animation:pulse 1s ease-in-out infinite;z-index:3}
+@keyframes pulse{50%{transform:scale(1.35)}}
+.cell.selectable{cursor:pointer;animation:blink 1s infinite}
+.cell.selectable::after{content:"";position:absolute;inset:0;border:3px solid #6c3cff;border-radius:5px}
+@keyframes blink{50%{filter:brightness(1.18)}}
+.cell.landed{animation:land .5s}
+@keyframes land{40%{transform:scale(1.12)}}
+
+#center{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--b) * .025);
+  border-radius:8px;padding:4%;background:radial-gradient(circle at 50% 40%,#3b2c6e,#1d1538 75%);min-width:0;min-height:0}
+.logo{font-size:calc(var(--b) * .065);font-weight:900;color:var(--accent);letter-spacing:-1px;line-height:1}
+.dice{display:flex;gap:calc(var(--b) * .04)}
+.die{width:calc(var(--b) * .17);height:calc(var(--b) * .17);background:#fff;border-radius:18%;display:grid;
+  grid-template:repeat(3,1fr)/repeat(3,1fr);padding:10%;box-shadow:0 4px 0 #bbb,0 6px 12px rgba(0,0,0,.4)}
+.pip{border-radius:50%;margin:14%}
+.pip.on{background:#222}
+.die.red .pip.on{background:#e8293b}
+.die.rolling{animation:shake .28s linear infinite}
+@keyframes shake{0%{transform:rotate(0) translateY(0)}25%{transform:rotate(-20deg) translateY(-8%)}50%{transform:rotate(15deg)}75%{transform:rotate(-10deg) translateY(-4%)}100%{transform:rotate(0)}}
+#status{font-size:max(14px,calc(var(--b) * .034));min-height:1.3em;text-align:center;font-weight:700;color:#fff;word-break:keep-all}
+#rollBtn{width:72%;min-height:56px;padding:calc(var(--b) * .02) 0;border-radius:999px;font-size:max(19px,calc(var(--b) * .05));font-weight:900;
+  color:#3a2500;background:linear-gradient(#ffdb5c,#ffab00);box-shadow:0 5px 0 #b67900}
+#rollBtn:active:not(:disabled){transform:translateY(3px);box-shadow:0 2px 0 #b67900}
+
+/* ---------- 모달 ---------- */
+#modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(10,5,25,.7)}
+#modal.show{display:flex}
+.mcard{width:min(580px,100%);max-height:100%;overflow-y:auto;background:#fff;color:#222;border-radius:26px;padding:26px 22px 22px;
+  text-align:center;animation:pop .35s cubic-bezier(.2,1.6,.4,1)}
+.mcard.key{background:linear-gradient(160deg,#fff4c2,#ffd23f)}
+.mcard.space{background:linear-gradient(160deg,#e7e3ff,#b9adff)}
+@keyframes pop{0%{transform:scale(.5);opacity:0}100%{transform:scale(1);opacity:1}}
+.mwho{display:flex;align-items:center;justify-content:center;gap:8px;font-size:clamp(17px,4.5vw,24px);font-weight:800;color:#555}
+.mwho .dot{border-color:#333}
+.micon{font-size:clamp(56px,15vw,100px);line-height:1.15;margin-top:6px}
+.mtitle{font-size:clamp(32px,9vw,60px);font-weight:900;letter-spacing:-1px;line-height:1.1}
+.mnote{display:inline-block;margin-top:10px;padding:6px 14px;border-radius:999px;background:#ffe1e5;color:#c4142c;font-weight:800;font-size:clamp(15px,4vw,20px)}
+.mdesc{font-size:clamp(22px,6vw,36px);font-weight:700;line-height:1.35;margin:16px 0 22px;word-break:keep-all}
+.kcard{background:#fff;border-radius:18px;padding:22px 16px;margin:14px 0 22px;box-shadow:0 6px 18px rgba(150,100,0,.3);
+  font-size:clamp(22px,6vw,34px);font-weight:800;line-height:1.35;word-break:keep-all;animation:flip .6s ease-out}
+@keyframes flip{0%{transform:rotateY(90deg)}100%{transform:rotateY(0)}}
+.mbtn{width:100%;min-height:68px;border-radius:18px;background:var(--purple);color:#fff;font-size:clamp(22px,5.5vw,30px);font-weight:900;box-shadow:0 5px 0 #3f1fb0}
+.mbtn.gold{background:#ff8a00;box-shadow:0 5px 0 #b45f00}
+
+#toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 14px);transform:translate(-50%,-150%);z-index:60;max-width:92vw;
+  background:#fff;color:#222;padding:14px 20px;border-radius:16px;font-size:clamp(17px,4.5vw,24px);font-weight:800;text-align:center;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);transition:transform .3s;pointer-events:none;word-break:keep-all}
+#toast.show{transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+
+<!-- 1. 플레이어 설정 -->
+<section id="setup" class="screen">
+  <div class="wrap">
+    <h1>🍺 주루마블</h1>
+    <p class="sub">부루마블 × 술게임 · 2~10명</p>
+    <form id="addForm" autocomplete="off">
+      <input id="nameInput" maxlength="10" placeholder="이름 입력" enterkeyhint="done">
+      <button id="addBtn" type="submit">추가</button>
+    </form>
+    <div id="countInfo"></div>
+    <ol id="setupList"></ol>
+    <button id="shuffleBtn" type="button">🔀 순서 랜덤 섞기</button>
+    <button id="startBtn" type="button">게임 시작 ▶</button>
+  </div>
+</section>
+
+<!-- 2. 게임 -->
+<section id="game" class="screen">
+  <div id="topbar">
+    <div id="turnLabel"><span id="turnDot" class="dot"></span><span id="turnName"></span><span class="suffix">차례</span></div>
+    <button id="resetBtn" type="button">↺ 게임 초기화</button>
+  </div>
+  <div id="boardWrap"><div id="board"></div></div>
+  <div id="plist"></div>
+</section>
+
+<div id="modal"><div id="mcard" class="mcard"></div></div>
+<div id="toast"></div>
+
+<script>
+(() => {
+'use strict';
+const COLORS = ['#ff4757','#1e90ff','#2ed573','#ffa502','#a55eea','#ff6b9d','#00cec9','#8d6e63','#fdd835','#2f3542'];
+const STORAGE_KEY = 'jurumarble-v1';
+const MAX_P = 10, MIN_P = 2;
+const N = BOARD.length;
+const S = N / 4;          // 한 변의 칸 수(다음 모서리 제외)
+const G = S + 1;          // 그리드 한 줄 칸 수
+const DEFAULT_ICON = { start:'🏁', island:'🏝️', key:'🔑', space:'🚀', normal:'' };
+const SPACE_IDX = BOARD.findIndex(c => c.type === 'space');
+const ISLAND_IDX = BOARD.findIndex(c => c.type === 'island');
+
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const rand = n => Math.floor(Math.random() * n);
+
+// ---------- 상태 ----------
+function freshState(){ return { phase:'setup', players:[], turn:0, pos:0, dice:1, pending:null, status:'' }; }
+function load(){
+  try { const s = JSON.parse(localStorage.getItem(STORAGE_KEY)); if (s && Array.isArray(s.players)) return Object.assign(freshState(), s); }
+  catch(e){}
+  return null;
+}
+function save(){ try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e){} }
+let state = load() || freshState();
+// 저장된 데이터가 현재 보드와 맞지 않으면 보정
+if (!(state.pos >= 0 && state.pos < N)) state.pos = 0;
+if (!(state.dice >= 1 && state.dice <= 6)) state.dice = 1;
+if (state.turn >= state.players.length) state.turn = 0;
+if (state.phase === 'game' && state.players.length < MIN_P) state.phase = 'setup';
+
+let busy = false;        // 애니메이션 중
+let animPos = null;      // 이동 애니메이션 중 표시 위치
+const cur = () => state.players[state.turn];
+const shownPos = () => (animPos ?? state.pos);
+
+// ---------- 토스트 ----------
+let toastTimer;
+function toast(msg, ms = 2200){
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms);
+}
+
+// ================= 설정 화면 =================
+function renderSetup(){
+  const list = $('setupList'); list.innerHTML = '';
+  const ps = state.players;
+  if (!ps.length){
+    const li = document.createElement('li'); li.className = 'empty'; li.textContent = '플레이어를 추가해주세요'; list.appendChild(li);
+  }
+  ps.forEach((p, i) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="num">${i+1}</span><span class="dot"></span><span class="nm"></span>
+      <button class="ibtn" data-a="up" ${i===0?'disabled':''} aria-label="위로">▲</button>
+      <button class="ibtn" data-a="down" ${i===ps.length-1?'disabled':''} aria-label="아래로">▼</button>
+      <button class="ibtn del" data-a="del" aria-label="삭제">✕</button>`;
+    li.querySelector('.dot').style.background = p.color;
+    li.querySelector('.nm').textContent = p.name;
+    li.querySelectorAll('button').forEach(b => b.onclick = () => setupAction(b.dataset.a, i));
+    list.appendChild(li);
+  });
+  $('countInfo').textContent = `플레이어 ${ps.length}명 / 최대 ${MAX_P}명 · 위에서부터 순서대로 진행`;
+  $('addBtn').disabled = ps.length >= MAX_P;
+  $('shuffleBtn').disabled = ps.length < 2;
+  $('startBtn').disabled = ps.length < MIN_P;
+}
+function setupAction(a, i){
+  const ps = state.players;
+  if (a === 'up' && i > 0) [ps[i-1], ps[i]] = [ps[i], ps[i-1]];
+  if (a === 'down' && i < ps.length-1) [ps[i+1], ps[i]] = [ps[i], ps[i+1]];
+  if (a === 'del') ps.splice(i, 1);
+  save(); renderSetup();
+}
+$('addForm').onsubmit = e => {
+  e.preventDefault();
+  const inp = $('nameInput'); const name = inp.value.trim();
+  if (!name) return;
+  if (state.players.length >= MAX_P) { toast(`최대 ${MAX_P}명까지예요`); return; }
+  if (state.players.some(p => p.name === name)) { toast('이미 있는 이름이에요'); return; }
+  const used = state.players.map(p => p.color);
+  const color = COLORS.find(c => !used.includes(c)) || COLORS[state.players.length % COLORS.length];
+  state.players.push({ name, color, skip:0 });
+  inp.value = ''; save(); renderSetup();
+  if (state.players.length < MAX_P) inp.focus();
+};
+$('shuffleBtn').onclick = () => {
+  const ps = state.players;
+  for (let i = ps.length-1; i > 0; i--){ const j = rand(i+1); [ps[i], ps[j]] = [ps[j], ps[i]]; }
+  save(); renderSetup(); toast('🔀 순서를 섞었어요!');
+};
+$('startBtn').onclick = () => {
+  if (state.players.length < MIN_P) return;
+  $('nameInput').blur();
+  state.players.forEach(p => { p.skip = 0; });
+  Object.assign(state, { phase:'game', turn:0, pos:0, dice:1, pending:null, status:'주사위를 굴려주세요!' });
+  save(); render();
+};
+
+// ================= 보드 =================
+function cellRC(i){              // i번 칸의 [row, col] (0부터)
+  if (i <= S)   return [G-1, G-1-i];
+  if (i <= 2*S) return [G-1-(i-S), 0];
+  if (i <= 3*S) return [0, i-2*S];
+  return [i-3*S, G-1];
+}
+let cellEls = [], diceEls = [];
+const PIPS = {1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+
+function buildBoard(){
+  const board = $('board'); board.innerHTML = '';
+  const tpl = `1.4fr repeat(${G-2}, 1fr) 1.4fr`;
+  board.style.gridTemplateColumns = tpl; board.style.gridTemplateRows = tpl;
+  const sideColors = ['#ff6b81','#ffa94d','#51cf66','#4dabf7'];
+  cellEls = BOARD.map((c, i) => {
+    const el = document.createElement('div');
+    const [r, col] = cellRC(i);
+    el.style.gridRow = r + 1; el.style.gridColumn = col + 1;
+    const corner = i % S === 0;
+    el.className = `cell t-${c.type}` + (corner ? ' corner' : '') + (corner && c.type === 'normal' ? ' toast' : '');
+    const icon = c.icon || DEFAULT_ICON[c.type] || '';
+    if (c.type === 'normal' && !corner){
+      const band = document.createElement('div'); band.className = 'band';
+      band.style.background = sideColors[Math.floor(i / S) % 4]; el.appendChild(band);
+    }
+    if (icon && (corner || c.type === 'key')){
+      const ic = document.createElement('div'); ic.className = 'ci'; ic.textContent = icon; el.appendChild(ic);
+    }
+    const nm = document.createElement('div'); nm.className = 'cn'; nm.textContent = c.name; el.appendChild(nm);
+    const tk = document.createElement('div'); tk.className = 'tokens'; el.appendChild(tk);
+    el.onclick = () => onCellTap(i);
+    board.appendChild(el);
+    return el;
+  });
+  const center = document.createElement('div'); center.id = 'center';
+  center.style.gridRow = `2 / ${G}`; center.style.gridColumn = `2 / ${G}`;
+  center.innerHTML = `<div class="logo">🍺 주루마블</div>
+    <div class="dice"><div class="die red"></div></div>
+    <div id="status"></div>
+    <button id="rollBtn" type="button">🎲 주사위 굴리기</button>`;
+  board.appendChild(center);
+  diceEls = [...center.querySelectorAll('.die')];
+  diceEls.forEach(d => { for (let k = 0; k < 9; k++) d.appendChild(document.createElement('span')).className = 'pip'; });
+  $('rollBtn').onclick = roll;
+  fitBoard();
+}
+function setDie(el, n){ el.querySelectorAll('.pip').forEach((p, k) => p.classList.toggle('on', PIPS[n].includes(k))); }
+
+function fitBoard(){
+  const wrap = $('boardWrap'), board = $('board');
+  const cs = getComputedStyle(wrap);
+  const w = wrap.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const h = wrap.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  const side = Math.max(200, Math.floor(Math.min(w, h)));
+  board.style.width = board.style.height = side + 'px';
+  board.style.setProperty('--b', side + 'px');
+}
+new ResizeObserver(() => { if (state.phase === 'game') fitBoard(); }).observe($('boardWrap'));
+
+function renderTokens(){
+  cellEls.forEach(el => el.querySelector('.tokens').innerHTML = '');
+  const t = document.createElement('div');          // 말은 1개 (현재 차례 사람 색)
+  t.className = 'token me';
+  t.style.background = cur().color;
+  cellEls[shownPos()].querySelector('.tokens').appendChild(t);
+}
+function renderPlayers(){
+  const box = $('plist'); box.innerHTML = '';
+  state.players.forEach((p, i) => {
+    const d = document.createElement('div');
+    d.className = 'pchip' + (i === state.turn ? ' cur' : '');
+    d.innerHTML = `<span class="num">${i+1}</span><span class="dot"></span><span class="pn"></span><span class="pp"></span>`;
+    d.querySelector('.dot').style.background = p.color;
+    d.querySelector('.pn').textContent = p.name;
+    d.querySelector('.pp').textContent = p.skip > 0 ? '🏝️ 다음 턴 쉼' : '';
+    box.appendChild(d);
+  });
+  const c = box.querySelector('.cur'); if (c) c.scrollIntoView({ block:'nearest', inline:'nearest' });
+}
+function renderControls(){
+  const p = cur();
+  $('turnName').textContent = p.name;
+  $('turnDot').style.background = p.color;
+  const selecting = state.pending && state.pending.kind === 'space' && !busy;
+  $('rollBtn').disabled = busy || !!state.pending;
+  $('status').textContent = selecting ? '🚀 우주여행! 이동할 칸을 탭하세요' : (state.status || '');
+  cellEls.forEach((el, i) => el.classList.toggle('selectable', selecting && i !== SPACE_IDX));
+  if (!busy) setDie(diceEls[0], state.dice);
+}
+function renderGame(){ renderControls(); renderTokens(); renderPlayers(); }
+
+function render(){
+  $('setup').classList.toggle('active', state.phase === 'setup');
+  $('game').classList.toggle('active', state.phase === 'game');
+  if (state.phase === 'setup') { hideModal(); renderSetup(); return; }
+  if (!cellEls.length) buildBoard();
+  fitBoard(); renderGame();
+}
+
+// ================= 진행 =================
+function makePending(cell, p){
+  const t = BOARD[cell].type;
+  if (t === 'key') return { kind:'mission', cell, key: rand(KEYS.length) };
+  if (t === 'space') return { kind:'space' };
+  if (t === 'island') p.skip = 1;     // 도착한 사람이 다음 자기 차례를 쉼
+  return { kind:'mission', cell };
+}
+
+function animateDice(final){
+  return new Promise(res => {
+    const d = diceEls[0];
+    d.classList.add('rolling');
+    const iv = setInterval(() => setDie(d, 1 + rand(6)), 70);
+    setTimeout(() => {
+      clearInterval(iv);
+      d.classList.remove('rolling'); setDie(d, final);
+      res();
+    }, 800);
+  });
+}
+
+async function animateMove(from, steps, delay){
+  for (let s = 1; s <= steps; s++){
+    animPos = (from + s) % N;
+    renderTokens();
+    const el = cellEls[animPos]; el.classList.remove('landed'); void el.offsetWidth; el.classList.add('landed');
+    if (animPos === 0) toast(PASS_START_MSG, 2600);
+    if (navigator.vibrate) try { navigator.vibrate(10); } catch(e){}
+    await sleep(delay);
+  }
+  animPos = null;
+}
+
+async function roll(){
+  if (busy || state.pending || state.phase !== 'game') return;
+  busy = true; state.status = '두구두구...'; renderControls();
+  const n = 1 + rand(6);
+  await animateDice(n);
+  state.dice = n;
+  const p = cur(), from = state.pos, to = (from + n) % N;
+  state.pos = to;
+  state.status = `🎲 ${n}칸 → ${BOARD[to].name}`;
+  state.pending = makePending(to, p);
+  save();                               // 새로고침해도 결과 유지
+  renderControls();
+  await animateMove(from, n, 300);
+  busy = false; renderGame(); showPending();
+}
+
+async function onCellTap(i){
+  const pd = state.pending;
+  if (pd && pd.kind === 'space' && !busy){
+    if (i === SPACE_IDX) { toast('다른 칸을 골라주세요'); return; }
+    busy = true;
+    const from = state.pos, steps = (i - from + N) % N;
+    state.pos = i;
+    state.pending = makePending(i, cur());
+    state.status = `🚀 ${BOARD[i].name}(으)로 슝~`;
+    save(); renderControls();
+    await animateMove(from, steps, 90);
+    busy = false; renderGame(); showPending();
+    return;
+  }
+  const c = BOARD[i];
+  toast(c.type === 'key' ? '🔑 황금열쇠: 카드 1장 뽑기' : `${c.name}: ${c.desc}`, 2600);
+}
+
+function complete(){
+  if (!state.pending) return;
+  state.pending = null; hideModal();
+  nextTurn();
+}
+function nextTurn(){
+  state.turn = (state.turn + 1) % state.players.length;
+  state.status = '주사위를 굴려주세요!';
+  const p = cur();
+  if (p.skip > 0){ p.skip--; state.pending = { kind:'skip' }; }
+  save(); renderGame();
+  if (state.pending) showPending();
+}
+
+// ---------- 모달 ----------
+function whoHTML(p){ return `<div class="mwho"><span class="dot" style="background:${p.color}"></span><span class="w"></span></div>`; }
+function showPending(){
+  const pd = state.pending, card = $('mcard'), p = cur();
+  if (!pd) { hideModal(); return; }
+  if (pd.kind === 'space'){ hideModal(); renderControls(); toast('🚀 우주여행! 이동할 칸을 탭하세요', 2600); return; }
+  card.className = 'mcard';
+  let html = whoHTML(p), btn = '완료', gold = false;
+  if (pd.kind === 'skip'){
+    html += `<div class="micon">🏝️</div><div class="mtitle">무인도</div>
+      <div class="mdesc"></div>`;
+    btn = '다음 사람 ▶';
+  } else {
+    const c = BOARD[pd.cell];
+    if (c.type === 'key'){
+      card.classList.add('key');
+      html += `<div class="micon">🔑</div><div class="mtitle">황금열쇠</div><div class="kcard"></div>`;
+    } else {
+      html += `<div class="micon">${c.icon || DEFAULT_ICON[c.type] || '🍺'}</div><div class="mtitle"></div>
+        ${pd.note ? '<div class="mnote"></div>' : ''}<div class="mdesc"></div>`;
+    }
+  }
+  html += `<button class="mbtn${gold ? ' gold' : ''}" type="button"></button>`;
+  card.innerHTML = html;
+  card.querySelector('.w').textContent = p.name + (pd.kind === 'skip' ? '' : '님');
+  if (pd.kind === 'skip'){
+    card.querySelector('.mdesc').textContent = `${p.name}님은 무인도에서 이번 턴 쉽니다 😴`;
+  } else {
+    const c = BOARD[pd.cell];
+    if (c.type === 'key') card.querySelector('.kcard').textContent = KEYS[pd.key] ?? KEYS[0] ?? '';
+    else {
+      card.querySelector('.mtitle').textContent = c.name;
+      card.querySelector('.mdesc').textContent = c.desc;
+      if (pd.note) card.querySelector('.mnote').textContent = pd.note;
+    }
+  }
+  const b = card.querySelector('.mbtn'); b.textContent = btn; b.onclick = complete;
+  $('modal').classList.add('show');
+}
+function hideModal(){ $('modal').classList.remove('show'); }
+
+// ---------- 초기화 ----------
+$('resetBtn').onclick = () => {
+  if (busy) return;
+  if (!confirm('게임을 초기화할까요?\n위치와 차례가 모두 처음으로 돌아갑니다.\n(플레이어 명단은 유지돼요)')) return;
+  state.players.forEach(p => { p.skip = 0; });
+  Object.assign(state, { phase:'setup', turn:0, pos:0, dice:1, pending:null, status:'' });
+  save(); render();
+};
+
+// ---------- 확대 방지 (iOS) ----------
+['gesturestart','gesturechange','gestureend'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive:false }));
+document.addEventListener('dblclick', e => e.preventDefault(), { passive:false });
+
+// ---------- 시작 ----------
+if (N % 4 !== 0) alert('BOARD 칸 수는 4의 배수여야 해요! (현재 ' + N + '칸)');
+render();
+if (state.phase === 'game') showPending();
+})();
+</script>
+</body>
+</html>
