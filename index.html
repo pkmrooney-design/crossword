@@ -167,7 +167,7 @@ h1{font-size:clamp(36px,10vw,56px);margin:8px 0 2px;text-align:center;color:var(
 .cell.t-key .cn{margin-top:0;white-space:nowrap;font-size:calc(var(--b) * .023)}
 .cell.toast{background:#ffc2d1}
 .cell .tokens{position:absolute;left:1px;right:1px;bottom:2px;display:flex;flex-wrap:wrap;justify-content:center;gap:1px;z-index:2;pointer-events:none}
-.token{width:calc(var(--b) * .032);height:calc(var(--b) * .032);border-radius:50%;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.6)}
+.token{width:calc(var(--b) * .045);height:calc(var(--b) * .045);border-radius:50%;border:2.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.6)}
 .token.me{animation:pulse 1s ease-in-out infinite;z-index:3}
 @keyframes pulse{50%{transform:scale(1.35)}}
 .cell.selectable{cursor:pointer;animation:blink 1s infinite}
@@ -180,7 +180,7 @@ h1{font-size:clamp(36px,10vw,56px);margin:8px 0 2px;text-align:center;color:var(
   border-radius:8px;padding:4%;background:radial-gradient(circle at 50% 40%,#3b2c6e,#1d1538 75%);min-width:0;min-height:0}
 .logo{font-size:calc(var(--b) * .065);font-weight:900;color:var(--accent);letter-spacing:-1px;line-height:1}
 .dice{display:flex;gap:calc(var(--b) * .04)}
-.die{width:calc(var(--b) * .135);height:calc(var(--b) * .135);background:#fff;border-radius:18%;display:grid;
+.die{width:calc(var(--b) * .17);height:calc(var(--b) * .17);background:#fff;border-radius:18%;display:grid;
   grid-template:repeat(3,1fr)/repeat(3,1fr);padding:10%;box-shadow:0 4px 0 #bbb,0 6px 12px rgba(0,0,0,.4)}
 .pip{border-radius:50%;margin:14%}
 .pip.on{background:#222}
@@ -267,7 +267,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const rand = n => Math.floor(Math.random() * n);
 
 // ---------- 상태 ----------
-function freshState(){ return { phase:'setup', players:[], turn:0, doubles:0, dice:[1,1], pending:null, status:'' }; }
+function freshState(){ return { phase:'setup', players:[], turn:0, pos:0, dice:1, pending:null, status:'' }; }
 function load(){
   try { const s = JSON.parse(localStorage.getItem(STORAGE_KEY)); if (s && Array.isArray(s.players)) return Object.assign(freshState(), s); }
   catch(e){}
@@ -276,14 +276,15 @@ function load(){
 function save(){ try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e){} }
 let state = load() || freshState();
 // 저장된 데이터가 현재 보드와 맞지 않으면 보정
-state.players.forEach(p => { if (!(p.pos >= 0 && p.pos < N)) p.pos = 0; });
+if (!(state.pos >= 0 && state.pos < N)) state.pos = 0;
+if (!(state.dice >= 1 && state.dice <= 6)) state.dice = 1;
 if (state.turn >= state.players.length) state.turn = 0;
 if (state.phase === 'game' && state.players.length < MIN_P) state.phase = 'setup';
 
 let busy = false;        // 애니메이션 중
-const anim = {};         // 이동 애니메이션 중 표시 위치
+let animPos = null;      // 이동 애니메이션 중 표시 위치
 const cur = () => state.players[state.turn];
-const shownPos = i => (anim[i] ?? state.players[i].pos);
+const shownPos = () => (animPos ?? state.pos);
 
 // ---------- 토스트 ----------
 let toastTimer;
@@ -330,7 +331,7 @@ $('addForm').onsubmit = e => {
   if (state.players.some(p => p.name === name)) { toast('이미 있는 이름이에요'); return; }
   const used = state.players.map(p => p.color);
   const color = COLORS.find(c => !used.includes(c)) || COLORS[state.players.length % COLORS.length];
-  state.players.push({ name, color, pos:0, skip:0 });
+  state.players.push({ name, color, skip:0 });
   inp.value = ''; save(); renderSetup();
   if (state.players.length < MAX_P) inp.focus();
 };
@@ -342,8 +343,8 @@ $('shuffleBtn').onclick = () => {
 $('startBtn').onclick = () => {
   if (state.players.length < MIN_P) return;
   $('nameInput').blur();
-  state.players.forEach(p => { p.pos = 0; p.skip = 0; });
-  Object.assign(state, { phase:'game', turn:0, doubles:0, dice:[1,1], pending:null, status:'주사위를 굴려주세요!' });
+  state.players.forEach(p => { p.skip = 0; });
+  Object.assign(state, { phase:'game', turn:0, pos:0, dice:1, pending:null, status:'주사위를 굴려주세요!' });
   save(); render();
 };
 
@@ -385,7 +386,7 @@ function buildBoard(){
   const center = document.createElement('div'); center.id = 'center';
   center.style.gridRow = `2 / ${G}`; center.style.gridColumn = `2 / ${G}`;
   center.innerHTML = `<div class="logo">🍺 주루마블</div>
-    <div class="dice"><div class="die"></div><div class="die red"></div></div>
+    <div class="dice"><div class="die red"></div></div>
     <div id="status"></div>
     <button id="rollBtn" type="button">🎲 주사위 굴리기</button>`;
   board.appendChild(center);
@@ -409,14 +410,10 @@ new ResizeObserver(() => { if (state.phase === 'game') fitBoard(); }).observe($(
 
 function renderTokens(){
   cellEls.forEach(el => el.querySelector('.tokens').innerHTML = '');
-  const order = state.players.map((_, i) => i).filter(i => i !== state.turn).concat(state.turn);
-  order.forEach(i => {
-    const p = state.players[i];
-    const t = document.createElement('div');
-    t.className = 'token' + (i === state.turn ? ' me' : '');
-    t.style.background = p.color;
-    cellEls[shownPos(i)].querySelector('.tokens').appendChild(t);
-  });
+  const t = document.createElement('div');          // 말은 1개 (현재 차례 사람 색)
+  t.className = 'token me';
+  t.style.background = cur().color;
+  cellEls[shownPos()].querySelector('.tokens').appendChild(t);
 }
 function renderPlayers(){
   const box = $('plist'); box.innerHTML = '';
@@ -426,7 +423,7 @@ function renderPlayers(){
     d.innerHTML = `<span class="num">${i+1}</span><span class="dot"></span><span class="pn"></span><span class="pp"></span>`;
     d.querySelector('.dot').style.background = p.color;
     d.querySelector('.pn').textContent = p.name;
-    d.querySelector('.pp').textContent = '📍' + BOARD[shownPos(i)].name + (p.skip > 0 ? ' 🏝️쉬는중' : '');
+    d.querySelector('.pp').textContent = p.skip > 0 ? '🏝️ 다음 턴 쉼' : '';
     box.appendChild(d);
   });
   const c = box.querySelector('.cur'); if (c) c.scrollIntoView({ block:'nearest', inline:'nearest' });
@@ -439,7 +436,7 @@ function renderControls(){
   $('rollBtn').disabled = busy || !!state.pending;
   $('status').textContent = selecting ? '🚀 우주여행! 이동할 칸을 탭하세요' : (state.status || '');
   cellEls.forEach((el, i) => el.classList.toggle('selectable', selecting && i !== SPACE_IDX));
-  if (!busy) diceEls.forEach((d, k) => setDie(d, state.dice[k] || 1));
+  if (!busy) setDie(diceEls[0], state.dice);
 }
 function renderGame(){ renderControls(); renderTokens(); renderPlayers(); }
 
@@ -452,59 +449,52 @@ function render(){
 }
 
 // ================= 진행 =================
-function makePending(cell, extra, p){
+function makePending(cell, p){
   const t = BOARD[cell].type;
-  if (t === 'key') return { kind:'mission', cell, key: rand(KEYS.length), extra };
-  if (t === 'space') return { kind:'space', extra };
-  if (t === 'island'){ p.skip = 1; return { kind:'mission', cell, extra:false }; }
-  return { kind:'mission', cell, extra };
+  if (t === 'key') return { kind:'mission', cell, key: rand(KEYS.length) };
+  if (t === 'space') return { kind:'space' };
+  if (t === 'island') p.skip = 1;     // 도착한 사람이 다음 자기 차례를 쉼
+  return { kind:'mission', cell };
 }
 
 function animateDice(final){
   return new Promise(res => {
-    diceEls.forEach(d => d.classList.add('rolling'));
-    const iv = setInterval(() => diceEls.forEach(d => setDie(d, 1 + rand(6))), 70);
+    const d = diceEls[0];
+    d.classList.add('rolling');
+    const iv = setInterval(() => setDie(d, 1 + rand(6)), 70);
     setTimeout(() => {
       clearInterval(iv);
-      diceEls.forEach((d, k) => { d.classList.remove('rolling'); setDie(d, final[k]); });
+      d.classList.remove('rolling'); setDie(d, final);
       res();
     }, 800);
   });
 }
 
-async function animateMove(pi, from, steps, delay){
+async function animateMove(from, steps, delay){
   for (let s = 1; s <= steps; s++){
-    anim[pi] = (from + s) % N;
+    animPos = (from + s) % N;
     renderTokens();
-    const el = cellEls[anim[pi]]; el.classList.remove('landed'); void el.offsetWidth; el.classList.add('landed');
-    if (anim[pi] === 0) toast(PASS_START_MSG, 2600);
+    const el = cellEls[animPos]; el.classList.remove('landed'); void el.offsetWidth; el.classList.add('landed');
+    if (animPos === 0) toast(PASS_START_MSG, 2600);
     if (navigator.vibrate) try { navigator.vibrate(10); } catch(e){}
     await sleep(delay);
   }
-  delete anim[pi];
+  animPos = null;
 }
 
 async function roll(){
   if (busy || state.pending || state.phase !== 'game') return;
   busy = true; state.status = '두구두구...'; renderControls();
-  const d = [1 + rand(6), 1 + rand(6)];
-  await animateDice(d);
-  state.dice = d;
-  const p = cur(), pi = state.turn, sum = d[0] + d[1], dbl = d[0] === d[1];
-  state.doubles = dbl ? state.doubles + 1 : 0;
-  state.status = `🎲 ${d[0]} + ${d[1]} = ${sum}` + (dbl ? ' · 더블!' : '');
-
-  if (dbl && state.doubles >= 3 && ISLAND_IDX >= 0){   // 더블 3연속 → 무인도 직행
-    p.pos = ISLAND_IDX; p.skip = 1; state.doubles = 0;
-    state.pending = { kind:'mission', cell:ISLAND_IDX, extra:false, note:'더블 3번 연속! 과속으로 무인도 직행 🚓' };
-    save(); busy = false; renderGame(); showPending(); return;
-  }
-  const from = p.pos, to = (from + sum) % N;
-  p.pos = to;
-  state.pending = makePending(to, dbl, p);
+  const n = 1 + rand(6);
+  await animateDice(n);
+  state.dice = n;
+  const p = cur(), from = state.pos, to = (from + n) % N;
+  state.pos = to;
+  state.status = `🎲 ${n}칸 → ${BOARD[to].name}`;
+  state.pending = makePending(to, p);
   save();                               // 새로고침해도 결과 유지
   renderControls();
-  await animateMove(pi, from, sum, 260);
+  await animateMove(from, n, 300);
   busy = false; renderGame(); showPending();
 }
 
@@ -513,12 +503,12 @@ async function onCellTap(i){
   if (pd && pd.kind === 'space' && !busy){
     if (i === SPACE_IDX) { toast('다른 칸을 골라주세요'); return; }
     busy = true;
-    const p = cur(), pi = state.turn, from = p.pos, steps = (i - from + N) % N;
-    p.pos = i;
-    state.pending = makePending(i, pd.extra, p);
+    const from = state.pos, steps = (i - from + N) % N;
+    state.pos = i;
+    state.pending = makePending(i, cur());
     state.status = `🚀 ${BOARD[i].name}(으)로 슝~`;
     save(); renderControls();
-    await animateMove(pi, from, steps, 90);
+    await animateMove(from, steps, 90);
     busy = false; renderGame(); showPending();
     return;
   }
@@ -527,17 +517,11 @@ async function onCellTap(i){
 }
 
 function complete(){
-  const pd = state.pending; if (!pd) return;
+  if (!state.pending) return;
   state.pending = null; hideModal();
-  if (pd.kind === 'mission' && pd.extra){
-    state.status = '🎲 더블! 한 번 더 굴리세요';
-    save(); renderGame(); toast(`🎲 더블! ${cur().name} 한 번 더!`);
-    return;
-  }
   nextTurn();
 }
 function nextTurn(){
-  state.doubles = 0;
   state.turn = (state.turn + 1) % state.players.length;
   state.status = '주사위를 굴려주세요!';
   const p = cur();
@@ -567,7 +551,6 @@ function showPending(){
       html += `<div class="micon">${c.icon || DEFAULT_ICON[c.type] || '🍺'}</div><div class="mtitle"></div>
         ${pd.note ? '<div class="mnote"></div>' : ''}<div class="mdesc"></div>`;
     }
-    if (pd.extra){ btn = '완료 → 🎲 한 번 더!'; gold = true; }
   }
   html += `<button class="mbtn${gold ? ' gold' : ''}" type="button"></button>`;
   card.innerHTML = html;
@@ -592,8 +575,8 @@ function hideModal(){ $('modal').classList.remove('show'); }
 $('resetBtn').onclick = () => {
   if (busy) return;
   if (!confirm('게임을 초기화할까요?\n위치와 차례가 모두 처음으로 돌아갑니다.\n(플레이어 명단은 유지돼요)')) return;
-  state.players.forEach(p => { p.pos = 0; p.skip = 0; });
-  Object.assign(state, { phase:'setup', turn:0, doubles:0, dice:[1,1], pending:null, status:'' });
+  state.players.forEach(p => { p.skip = 0; });
+  Object.assign(state, { phase:'setup', turn:0, pos:0, dice:1, pending:null, status:'' });
   save(); render();
 };
 
