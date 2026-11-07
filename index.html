@@ -29,7 +29,7 @@
  * ===================================================================== */
 const BOARD = [
   // ── 0: 출발 모서리 (오른쪽 아래) ──
-  { name: "", desc: "빈 칸! 아무 일도 없어요", type: "blank" },
+  { name: "출발", desc: "출발~! 아무 일도 없어요", type: "blank", icon: "🏁" },
   // ── 아래 변 (오른쪽 → 왼쪽) ──
   { name: "02 마셔", desc: "02 마셔! 🍺", type: "normal" },
   { name: "남자 마셔", desc: "남자 전원 마셔!", type: "normal" },
@@ -37,7 +37,7 @@ const BOARD = [
   { name: "은행 적립", desc: "은행에 1잔 적립! 🏦\n(은행 만기 칸에 걸린 사람이 모아둔 잔을 다 마셔요)", type: "bank_in", icon: "🏦" },
   { name: "흑기사", desc: "벌주 한 잔! 흑기사를 부를 수 있음 (흑기사는 나에게 소원 1개)", type: "normal" },
   // ── 6: 모서리 (왼쪽 아래) ──
-  { name: "", desc: "빈 칸! 아무 일도 없어요", type: "blank" },
+  { name: "휴게소", desc: "휴게소에서 잠깐 쉬어가요. 아무 일도 없어요", type: "blank", icon: "☕" },
   // ── 왼쪽 변 (아래 → 위) ──
   { name: "03 마셔", desc: "03 마셔! 🍺", type: "normal" },
   { name: "양 옆 한잔", desc: "내 양 옆 사람 한 잔씩!", type: "normal" },
@@ -45,7 +45,7 @@ const BOARD = [
   { name: "한잔", desc: "한 잔 마시기", type: "normal" },
   { name: "눈치게임!", desc: "눈치게임 시작! 1부터 외치고, 겹치거나 마지막인 사람 마셔!", type: "normal" },
   // ── 12: 모서리 (왼쪽 위) ──
-  { name: "", desc: "빈 칸! 아무 일도 없어요", type: "blank" },
+  { name: "멍때리기", desc: "잠깐 멍~ 아무 일도 없어요", type: "blank", icon: "😶" },
   // ── 위 변 (왼쪽 → 오른쪽) ──
   { name: "04 마셔", desc: "04 마셔! 🍺", type: "normal" },
   { name: "여자 마셔", desc: "여자 전원 마셔!", type: "normal" },
@@ -53,7 +53,7 @@ const BOARD = [
   { name: "두잔", desc: "두 잔 마시기", type: "normal" },
   { name: "건배사", desc: "건배사 하고 다같이 한 잔! 노잼이면 두 잔 🍻", type: "normal" },
   // ── 18: 모서리 (오른쪽 위) ──
-  { name: "", desc: "빈 칸! 아무 일도 없어요", type: "blank" },
+  { name: "숨 고르기", desc: "후~ 숨 한번 고르고 갑니다. 아무 일도 없어요", type: "blank", icon: "😮‍💨" },
   // ── 오른쪽 변 (위 → 아래) ──
   { name: "05 마셔", desc: "05 마셔! 🍺", type: "normal" },
   { name: "대졸 마셔", desc: "대졸 전원 마셔!", type: "normal" },
@@ -170,7 +170,7 @@ h1{font-size:clamp(36px,10vw,56px);margin:8px 0 2px;text-align:center;color:var(
 .cell .cn{white-space:pre-line}
 #bankInfo{font-size:max(13px,calc(var(--b) * .03));color:#9fd3ff;font-weight:800;min-height:1.2em}
 .mdesc{white-space:pre-line}
-.cell .tokens{position:absolute;left:1px;right:1px;bottom:2px;display:flex;flex-wrap:wrap;justify-content:center;gap:1px;z-index:2;pointer-events:none}
+.cell .tokens{position:absolute;right:2px;top:2px;display:flex;flex-wrap:wrap;justify-content:center;gap:1px;z-index:2;pointer-events:none}
 .token{width:calc(var(--b) * .045);height:calc(var(--b) * .045);border-radius:50%;border:2.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.6)}
 .token.me{animation:pulse 1s ease-in-out infinite;z-index:3}
 @keyframes pulse{50%{transform:scale(1.35)}}
