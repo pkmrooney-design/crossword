@@ -224,7 +224,7 @@ h1{font-size:clamp(36px,10vw,56px);margin:8px 0 2px;text-align:center;color:var(
 <section id="setup" class="screen">
   <div class="wrap">
     <h1>🍺 주루마블</h1>
-    <p class="sub">부루마블 × 술게임 · 2~10명</p>
+    <p class="sub">부루마블 × 술게임 · 2~11명</p>
     <form id="addForm" autocomplete="off">
       <input id="nameInput" maxlength="10" placeholder="이름 입력" enterkeyhint="done">
       <button id="addBtn" type="submit">추가</button>
@@ -252,9 +252,9 @@ h1{font-size:clamp(36px,10vw,56px);margin:8px 0 2px;text-align:center;color:var(
 <script>
 (() => {
 'use strict';
-const COLORS = ['#ff4757','#1e90ff','#2ed573','#ffa502','#a55eea','#ff6b9d','#00cec9','#8d6e63','#fdd835','#2f3542'];
+const COLORS = ['#ff4757','#1e90ff','#2ed573','#ffa502','#a55eea','#ff6b9d','#00cec9','#8d6e63','#fdd835','#2f3542','#ff9ff3'];
 const STORAGE_KEY = 'jurumarble-v1';
-const MAX_P = 10, MIN_P = 2;
+const MAX_P = 11, MIN_P = 2;
 const N = BOARD.length;
 const S = N / 4;          // 한 변의 칸 수(다음 모서리 제외)
 const G = S + 1;          // 그리드 한 줄 칸 수
