@@ -13,54 +13,53 @@
 /* =====================================================================
  *  ✏️ 여기만 고치면 됩니다!
  *  BOARD : 보드 칸 목록. 0번이 출발점이고, 출발점에서 반시계 방향으로 돕니다.
- *          칸 수는 4의 배수여야 합니다 (기본 28칸 = 모서리 4 + 변마다 6).
- *          모서리는 0, 7, 14, 21번 칸입니다.
+ *          칸 수는 4의 배수여야 합니다 (지금 24칸 = 모서리 4 + 변마다 5).
+ *          모서리는 0, 6, 12, 18번 칸입니다. (28칸이면 0, 7, 14, 21)
  *    name : 보드에 보이는 짧은 이름 (5~6글자 이내 권장)
  *    desc : 도착했을 때 크게 보여줄 미션 설명
  *    type : "start"  출발점
  *           "island" 무인도 (1턴 쉬기)
  *           "key"    황금열쇠 (KEYS에서 랜덤 1장)
  *           "space"  우주여행 (원하는 칸으로 이동)
+ *           "bank_in"  은행 적립 (은행에 1잔 쌓기)
+ *           "bank_out" 은행 만기 (쌓인 잔 전부 마시기)
+ *           "blank"  빈 칸 (아무 일 없음)
  *           "normal" 일반 미션
  *    icon : (선택) 칸/모달에 표시할 이모지
  * ===================================================================== */
 const BOARD = [
-  // ── 0: 출발 (오른쪽 아래 모서리) ──
-  { name: "출발", desc: "출발! 한 바퀴 돌 때마다 원하는 사람 1명 지목해서 한 잔 먹이기", type: "start", icon: "🏁" },
+  // ── 0: 출발 모서리 (오른쪽 아래) ──
+  { name: "", desc: "빈 칸! 아무 일도 없어요", type: "blank" },
   // ── 아래 변 (오른쪽 → 왼쪽) ──
-  { name: "원샷", desc: "내 잔 원샷!", type: "normal" },
-  { name: "러브샷", desc: "왼쪽 사람과 함께 러브샷 💕", type: "normal" },
-  { name: "황금열쇠", desc: "황금열쇠 카드를 뽑으세요", type: "key" },
-  { name: "지목", desc: "아무나 한 명 지목! 지목당한 사람 한 잔", type: "normal" },
-  { name: "존댓말 금지", desc: "다음 내 차례까지 전원 존댓말 금지! 존댓말 쓰면 한 잔", type: "normal" },
+  { name: "02 마셔", desc: "02 마셔! 🍺", type: "normal" },
+  { name: "남자 마셔", desc: "남자 전원 마셔!", type: "normal" },
+  { name: "1잔", desc: "1잔 마시기", type: "normal" },
+  { name: "은행 적립", desc: "은행에 1잔 적립! 🏦\n(은행 만기 칸에 걸린 사람이 모아둔 잔을 다 마셔요)", type: "bank_in", icon: "🏦" },
   { name: "흑기사", desc: "벌주 한 잔! 흑기사를 부를 수 있음 (흑기사는 나에게 소원 1개)", type: "normal" },
-  // ── 7: 무인도 (왼쪽 아래 모서리) ──
-  { name: "무인도", desc: "무인도에 갇혔다! 1턴 쉬기 🏝️", type: "island", icon: "🏝️" },
+  // ── 6: 모서리 (왼쪽 아래) ──
+  { name: "", desc: "빈 칸! 아무 일도 없어요", type: "blank" },
   // ── 왼쪽 변 (아래 → 위) ──
-  { name: "패스", desc: "아무것도 안 해도 됨. 휴~ 살았다 😮‍💨", type: "normal", icon: "😮‍💨" },
-  { name: "막내 원샷", desc: "이 자리에서 학번이 제일 낮은 사람 원샷!", type: "normal" },
-  { name: "손병호", desc: "손병호 게임 한 판! 손가락 다 접힌 사람 한 잔", type: "normal" },
-  { name: "황금열쇠", desc: "황금열쇠 카드를 뽑으세요", type: "key" },
-  { name: "건배사", desc: "멋진 건배사 한 마디 하고 다같이 한 잔! (재미없으면 혼자 한 잔 더)", type: "normal" },
-  { name: "양옆 한 잔", desc: "내 양 옆 사람 한 잔씩!", type: "normal" },
-  // ── 14: 다같이 건배 (왼쪽 위 모서리) ──
-  { name: "다같이 건배", desc: "전원 잔 들어! 다같이 건배~ 짠! 🍻", type: "normal", icon: "🍻" },
+  { name: "03 마셔", desc: "03 마셔! 🍺", type: "normal" },
+  { name: "양 옆 한잔", desc: "내 양 옆 사람 한 잔씩!", type: "normal" },
+  { name: "고졸 마셔", desc: "고졸 전원 마셔!", type: "normal" },
+  { name: "한잔", desc: "한 잔 마시기", type: "normal" },
+  { name: "눈치게임!", desc: "눈치게임 시작! 1부터 외치고, 겹치거나 마지막인 사람 마셔!", type: "normal" },
+  // ── 12: 모서리 (왼쪽 위) ──
+  { name: "", desc: "빈 칸! 아무 일도 없어요", type: "blank" },
   // ── 위 변 (왼쪽 → 오른쪽) ──
-  { name: "선배 지목", desc: "선배 한 명 지목해서 같이 한 잔", type: "normal" },
-  { name: "초성게임", desc: "초성 게임 한 판 (주제는 내가 정함)! 못 맞힌 사람 한 잔", type: "normal" },
-  { name: "황금열쇠", desc: "황금열쇠 카드를 뽑으세요", type: "key" },
-  { name: "반 잔", desc: "딱 반 잔만 마시기", type: "normal" },
-  { name: "베스킨31", desc: "베스킨라빈스 31 한 판! 31 외친 사람 한 잔", type: "normal" },
-  { name: "자기소개", desc: "학번·이름·MBTI로 자기소개하고 한 잔 (버벅이면 두 잔)", type: "normal" },
-  // ── 21: 우주여행 (오른쪽 위 모서리) ──
-  { name: "우주여행", desc: "원하는 칸으로 날아갑니다! 🚀", type: "space", icon: "🚀" },
+  { name: "04 마셔", desc: "04 마셔! 🍺", type: "normal" },
+  { name: "여자 마셔", desc: "여자 전원 마셔!", type: "normal" },
+  { name: "폭탄주 제조", desc: "폭탄주를 직접 제조해서 지목한 사람에게 선물하기 💣", type: "normal" },
+  { name: "두잔", desc: "두 잔 마시기", type: "normal" },
+  { name: "건배사", desc: "건배사 하고 다같이 한 잔! 노잼이면 두 잔 🍻", type: "normal" },
+  // ── 18: 모서리 (오른쪽 위) ──
+  { name: "", desc: "빈 칸! 아무 일도 없어요", type: "blank" },
   // ── 오른쪽 변 (위 → 아래) ──
-  { name: "오른쪽 한 잔", desc: "오른쪽 사람 한 잔!", type: "normal" },
-  { name: "황금열쇠", desc: "황금열쇠 카드를 뽑으세요", type: "key" },
-  { name: "진실게임", desc: "다른 사람들이 낸 질문 1개에 진실로 답하기. 거부하면 원샷!", type: "normal" },
-  { name: "패스", desc: "통과! 다같이 하이파이브 한 바퀴 🙌", type: "normal", icon: "🙌" },
-  { name: "폭탄주", desc: "폭탄주를 직접 제조해서 지목한 사람에게 선물하기 💣", type: "normal" },
-  { name: "생일자", desc: "이번 달 생일인 사람 다같이 한 잔! (없으면 내가 한 잔)", type: "normal" },
+  { name: "05 마셔", desc: "05 마셔! 🍺", type: "normal" },
+  { name: "대졸 마셔", desc: "대졸 전원 마셔!", type: "normal" },
+  { name: "은행 만기", desc: "은행 만기! 적립된 잔을 전부 마셔요 🏦", type: "bank_out", icon: "🏦" },
+  { name: "여자+도딕 마셔", desc: "여자 마셔! (도딕도 같이)", type: "normal" },
+  { name: "원샷", desc: "내 잔 원샷!", type: "normal" },   // ← 임시 칸 (20칸 맞추려고 추가)
 ];
 
 /* 황금열쇠 카드 (원하는 만큼 추가/삭제 가능) */
@@ -78,7 +77,7 @@ const KEYS = [
 ];
 
 /* 출발점을 지나갈 때 뜨는 알림 문구 */
-const PASS_START_MSG = "🎉 출발점 통과! 원하는 사람 1명 지목해서 한 잔!";
+const PASS_START_MSG = "🎉 한 바퀴 돌았어요!";   // 빈 문자열("")이면 알림 없음
 </script>
 <style>
 :root{
@@ -166,6 +165,11 @@ h1{font-size:clamp(36px,10vw,56px);margin:8px 0 2px;text-align:center;color:var(
 .cell.t-key{background:linear-gradient(145deg,#ffe27a,#f5b400);color:#5a3a00}
 .cell.t-key .cn{margin-top:0;white-space:nowrap;font-size:calc(var(--b) * .023)}
 .cell.toast{background:#ffc2d1}
+.cell.t-blank{background:#efe9dc}
+.cell.t-bank_in,.cell.t-bank_out{background:#cfe8ff}
+.cell .cn{white-space:pre-line}
+#bankInfo{font-size:max(13px,calc(var(--b) * .03));color:#9fd3ff;font-weight:800;min-height:1.2em}
+.mdesc{white-space:pre-line}
 .cell .tokens{position:absolute;left:1px;right:1px;bottom:2px;display:flex;flex-wrap:wrap;justify-content:center;gap:1px;z-index:2;pointer-events:none}
 .token{width:calc(var(--b) * .045);height:calc(var(--b) * .045);border-radius:50%;border:2.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.6)}
 .token.me{animation:pulse 1s ease-in-out infinite;z-index:3}
@@ -258,7 +262,8 @@ const MAX_P = 10, MIN_P = 2;
 const N = BOARD.length;
 const S = N / 4;          // 한 변의 칸 수(다음 모서리 제외)
 const G = S + 1;          // 그리드 한 줄 칸 수
-const DEFAULT_ICON = { start:'🏁', island:'🏝️', key:'🔑', space:'🚀', normal:'' };
+const DEFAULT_ICON = { start:'🏁', island:'🏝️', key:'🔑', space:'🚀', bank_in:'🏦', bank_out:'🏦', blank:'', normal:'' };
+const HAS_BANK = BOARD.some(c => c.type === 'bank_in' || c.type === 'bank_out');
 const SPACE_IDX = BOARD.findIndex(c => c.type === 'space');
 const ISLAND_IDX = BOARD.findIndex(c => c.type === 'island');
 
@@ -267,7 +272,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const rand = n => Math.floor(Math.random() * n);
 
 // ---------- 상태 ----------
-function freshState(){ return { phase:'setup', players:[], turn:0, pos:0, dice:1, pending:null, status:'' }; }
+function freshState(){ return { phase:'setup', players:[], turn:0, pos:0, dice:1, bank:0, pending:null, status:'' }; }
 function load(){
   try { const s = JSON.parse(localStorage.getItem(STORAGE_KEY)); if (s && Array.isArray(s.players)) return Object.assign(freshState(), s); }
   catch(e){}
@@ -278,6 +283,7 @@ let state = load() || freshState();
 // 저장된 데이터가 현재 보드와 맞지 않으면 보정
 if (!(state.pos >= 0 && state.pos < N)) state.pos = 0;
 if (!(state.dice >= 1 && state.dice <= 6)) state.dice = 1;
+if (!(state.bank >= 0)) state.bank = 0;
 if (state.turn >= state.players.length) state.turn = 0;
 if (state.phase === 'game' && state.players.length < MIN_P) state.phase = 'setup';
 
@@ -344,7 +350,7 @@ $('startBtn').onclick = () => {
   if (state.players.length < MIN_P) return;
   $('nameInput').blur();
   state.players.forEach(p => { p.skip = 0; });
-  Object.assign(state, { phase:'game', turn:0, pos:0, dice:1, pending:null, status:'주사위를 굴려주세요!' });
+  Object.assign(state, { phase:'game', turn:0, pos:0, dice:1, bank:0, pending:null, status:'주사위를 굴려주세요!' });
   save(); render();
 };
 
@@ -374,7 +380,7 @@ function buildBoard(){
       const band = document.createElement('div'); band.className = 'band';
       band.style.background = sideColors[Math.floor(i / S) % 4]; el.appendChild(band);
     }
-    if (icon && (corner || c.type === 'key')){
+    if (icon && (corner || c.type === 'key' || c.type.startsWith('bank'))){
       const ic = document.createElement('div'); ic.className = 'ci'; ic.textContent = icon; el.appendChild(ic);
     }
     const nm = document.createElement('div'); nm.className = 'cn'; nm.textContent = c.name; el.appendChild(nm);
@@ -388,6 +394,7 @@ function buildBoard(){
   center.innerHTML = `<div class="logo">🍺 주루마블</div>
     <div class="dice"><div class="die red"></div></div>
     <div id="status"></div>
+    <div id="bankInfo"></div>
     <button id="rollBtn" type="button">🎲 주사위 굴리기</button>`;
   board.appendChild(center);
   diceEls = [...center.querySelectorAll('.die')];
@@ -435,6 +442,7 @@ function renderControls(){
   const selecting = state.pending && state.pending.kind === 'space' && !busy;
   $('rollBtn').disabled = busy || !!state.pending;
   $('status').textContent = selecting ? '🚀 우주여행! 이동할 칸을 탭하세요' : (state.status || '');
+  $('bankInfo').textContent = HAS_BANK ? `🏦 은행 적립 ${state.bank}잔` : '';
   cellEls.forEach((el, i) => el.classList.toggle('selectable', selecting && i !== SPACE_IDX));
   if (!busy) setDie(diceEls[0], state.dice);
 }
@@ -454,6 +462,8 @@ function makePending(cell, p){
   if (t === 'key') return { kind:'mission', cell, key: rand(KEYS.length) };
   if (t === 'space') return { kind:'space' };
   if (t === 'island') p.skip = 1;     // 도착한 사람이 다음 자기 차례를 쉼
+  if (t === 'bank_in') { state.bank++; return { kind:'mission', cell, bank: state.bank }; }
+  if (t === 'bank_out') { const amt = state.bank; state.bank = 0; return { kind:'mission', cell, bank: amt }; }
   return { kind:'mission', cell };
 }
 
@@ -475,7 +485,7 @@ async function animateMove(from, steps, delay){
     animPos = (from + s) % N;
     renderTokens();
     const el = cellEls[animPos]; el.classList.remove('landed'); void el.offsetWidth; el.classList.add('landed');
-    if (animPos === 0) toast(PASS_START_MSG, 2600);
+    if (animPos === 0 && PASS_START_MSG) toast(PASS_START_MSG, 2600);
     if (navigator.vibrate) try { navigator.vibrate(10); } catch(e){}
     await sleep(delay);
   }
@@ -513,7 +523,7 @@ async function onCellTap(i){
     return;
   }
   const c = BOARD[i];
-  toast(c.type === 'key' ? '🔑 황금열쇠: 카드 1장 뽑기' : `${c.name}: ${c.desc}`, 2600);
+  toast(c.type === 'key' ? '🔑 황금열쇠: 카드 1장 뽑기' : `${c.name || '빈 칸'}: ${c.desc}`, 2600);
 }
 
 function complete(){
@@ -548,7 +558,7 @@ function showPending(){
       card.classList.add('key');
       html += `<div class="micon">🔑</div><div class="mtitle">황금열쇠</div><div class="kcard"></div>`;
     } else {
-      html += `<div class="micon">${c.icon || DEFAULT_ICON[c.type] || '🍺'}</div><div class="mtitle"></div>
+      html += `<div class="micon">${c.icon || DEFAULT_ICON[c.type] || (c.type === 'blank' ? '😌' : '🍺')}</div><div class="mtitle"></div>
         ${pd.note ? '<div class="mnote"></div>' : ''}<div class="mdesc"></div>`;
     }
   }
@@ -561,8 +571,11 @@ function showPending(){
     const c = BOARD[pd.cell];
     if (c.type === 'key') card.querySelector('.kcard').textContent = KEYS[pd.key] ?? KEYS[0] ?? '';
     else {
-      card.querySelector('.mtitle').textContent = c.name;
-      card.querySelector('.mdesc').textContent = c.desc;
+      card.querySelector('.mtitle').textContent = c.name || '빈 칸';
+      let desc = c.desc;
+      if (c.type === 'bank_in') desc += `\n\n🏦 현재 적립: ${pd.bank}잔`;
+      if (c.type === 'bank_out') desc = pd.bank > 0 ? `${c.desc}\n\n🍺 ${pd.bank}잔 마시기!` : '은행 만기! 그런데 적립된 잔이 없어요. 휴~ 😮‍💨';
+      card.querySelector('.mdesc').textContent = desc;
       if (pd.note) card.querySelector('.mnote').textContent = pd.note;
     }
   }
@@ -576,7 +589,7 @@ $('resetBtn').onclick = () => {
   if (busy) return;
   if (!confirm('게임을 초기화할까요?\n위치와 차례가 모두 처음으로 돌아갑니다.\n(플레이어 명단은 유지돼요)')) return;
   state.players.forEach(p => { p.skip = 0; });
-  Object.assign(state, { phase:'setup', turn:0, pos:0, dice:1, pending:null, status:'' });
+  Object.assign(state, { phase:'setup', turn:0, pos:0, dice:1, bank:0, pending:null, status:'' });
   save(); render();
 };
 
